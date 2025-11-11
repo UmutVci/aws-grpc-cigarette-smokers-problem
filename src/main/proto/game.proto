@@ -1,0 +1,44 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "com.umutavci.grpc";
+option java_outer_classname = "GameProto";
+
+service GameService {
+  rpc JoinGame (JoinRequest) returns (JoinResponse);
+  rpc JoinSpecificTable (JoinSpecificRequest) returns (JoinResponse);
+  rpc LeaveTable (LeaveRequest) returns (LeaveResponse);
+  rpc GetTableStatus (TableRequest) returns (TableResponse);
+}
+
+message JoinRequest {
+  string username = 1;
+}
+
+message JoinSpecificRequest {
+  string username = 1;
+  string tableId = 2;
+}
+
+message JoinResponse {
+  string message = 1;
+}
+
+message LeaveRequest {
+  string username = 1;
+  string tableId = 2;
+}
+
+message LeaveResponse {
+  string message = 1;
+}
+
+message TableRequest {
+  string tableId = 1;
+}
+
+message TableResponse {
+  string tableId = 1;
+  bool started = 2;
+  bool booked = 3;
+  int32 playerCount = 4;
+}
