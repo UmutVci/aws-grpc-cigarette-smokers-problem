@@ -8,6 +8,10 @@ service GameService {
   rpc JoinSpecificTable (JoinSpecificRequest) returns (JoinResponse);
   rpc LeaveTable (LeaveRequest) returns (LeaveResponse);
   rpc GetTableStatus (TableRequest) returns (TableResponse);
+  rpc AllTables (Empty) returns (AllTablesResponse);
+  rpc getAllUsersOnTable (TableRequest) returns (UsersOnTableResponse);
+  rpc StreamGameEvents (GameEventRequest) returns (stream GameEventResponse);
+
 }
 
 message JoinRequest {
@@ -21,6 +25,7 @@ message JoinSpecificRequest {
 
 message JoinResponse {
   string message = 1;
+  string tableId = 2;
 }
 
 message LeaveRequest {
@@ -41,4 +46,25 @@ message TableResponse {
   bool started = 2;
   bool booked = 3;
   int32 playerCount = 4;
+  repeated string smokers = 5;
 }
+
+message AllTablesResponse {
+  repeated TableResponse tables = 1;
+}
+
+message UsersOnTableResponse {
+  repeated JoinRequest users = 1;
+}
+
+message GameEventRequest {
+  string tableId = 1;
+}
+
+message GameEventResponse {
+  string message = 1;
+  string tableId = 2;
+}
+
+message Empty {}
+

@@ -1,4 +1,4 @@
-package com.umutavci.awscigarettesmokersproblem.adapter;
+package com.umutavci.awscigarettesmokersproblem.adapter.dynamo;
 
 import com.umutavci.awscigarettesmokersproblem.model.Table;
 import com.umutavci.awscigarettesmokersproblem.model.User;

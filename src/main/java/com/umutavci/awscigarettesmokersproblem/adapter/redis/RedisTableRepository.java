@@ -1,19 +1,20 @@
-package com.umutavci.awscigarettesmokersproblem.adapter;
+package com.umutavci.awscigarettesmokersproblem.adapter.redis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.umutavci.awscigarettesmokersproblem.model.Table;
 import com.umutavci.awscigarettesmokersproblem.service.spi.TableRepository;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Repository;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Repository
 @Profile("prod")
@@ -21,12 +22,13 @@ public class RedisTableRepository implements TableRepository {
 
     private final RedisTemplate<String, String> redisTemplate;
     private final ValueOperations<String, String> ops;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper;
     private static final String PREFIX = "table:";
 
-    public RedisTableRepository(RedisTemplate<String, String> redisTemplate) {
+    public RedisTableRepository(RedisTemplate<String, String> redisTemplate, ObjectMapper mapper) {
         this.redisTemplate = redisTemplate;
         this.ops = redisTemplate.opsForValue();
+        this.mapper = mapper;
     }
 
     @Override
@@ -40,24 +42,25 @@ public class RedisTableRepository implements TableRepository {
         }
     }
 
-    @Override
     public List<Table> listOpenTables() {
-        Set<String> keys = redisTemplate.keys(PREFIX + "*");
-        if (keys == null || keys.isEmpty()) return List.of();
-
-        return keys.stream()
-                .map(k -> ops.get(k))
-                .filter(json -> json != null && !json.isEmpty())
-                .map(json -> {
-                    try {
-                        return mapper.readValue(json, Table.class);
-                    } catch (JsonProcessingException e) {
-                        return null;
-                    }
-                })
-                .filter(t -> t != null && !t.isBooked() && !t.isStarted())
-                .collect(Collectors.toList());
+        List<Table> result = new ArrayList<>();
+        try (Cursor<byte[]> cursor = (Cursor<byte[]>) redisTemplate
+                .getConnectionFactory()
+                .getConnection()
+                .scan(ScanOptions.scanOptions().match(PREFIX + "*").count(100).build())) {
+            while (cursor.hasNext()) {
+                String key = new String(cursor.next());
+                String json = ops.get(key);
+                if (json == null) continue;
+                Table t = mapper.readValue(json, Table.class);
+                if (!t.isBooked() && !t.isStarted()) result.add(t);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Redis SCAN failed", e);
+        }
+        return result;
     }
+
 
     @Override
     public Table save(Table table) {
@@ -74,5 +77,17 @@ public class RedisTableRepository implements TableRepository {
     @Override
     public void delete(String tableId) {
         redisTemplate.delete(PREFIX + tableId);
+    }
+
+    @Override
+    public List<Table> allTables() {
+        // TODO : DO
+        return List.of();
+    }
+
+    @Override
+    public List<String> getAllUsersOnTable(String tableId) {
+        // TODO : DO
+        return List.of();
     }
 }
