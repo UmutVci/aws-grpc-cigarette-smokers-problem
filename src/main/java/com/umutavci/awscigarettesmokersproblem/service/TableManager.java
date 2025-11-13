@@ -18,10 +18,8 @@ public class TableManager {
     private final TableRepository tableRepo;
     private final GameResultRepository gameResultRepo;
 
-    // her masa için concurrency kontrolü
     private final Map<String, ReentrantLock> tableLocks = new ConcurrentHashMap<>();
 
-    /** Redis'ten açık masa bulur, yoksa yeni oluşturur. */
     public Table findOrCreateAvailableTable() {
         List<Table> open = tableRepo.listOpenTables();
         if (!open.isEmpty()) {
@@ -30,7 +28,6 @@ public class TableManager {
         return createNewTable();
     }
 
-    /** Yeni masa oluşturur ve Redis’e yazar. */
     public Table createNewTable() {
         String id = "table-" + UUID.randomUUID();
         Table table = new Table(id);
@@ -38,7 +35,6 @@ public class TableManager {
         return table;
     }
 
-    /** Kullanıcıyı masaya ekler. Masa dolarsa oyunu başlatır ve DynamoDB’ye başlangıç kaydı yazar. */
     public String addUserToTable(User user, String tableId) {
         Table table = tableRepo.findById(tableId)
                 .orElseThrow(() -> new NoSuchElementException("Table not found: " + tableId));
@@ -48,7 +44,6 @@ public class TableManager {
         try {
             String res = table.addUser(user);
             tableRepo.save(table);
-
             if (table.isStarted()) {
                 gameResultRepo.saveGameStart(table);
             }
@@ -58,7 +53,6 @@ public class TableManager {
         }
     }
 
-    /** Oyun bittiğinde temizlik yapar, sonucu Dynamo’ya kaydeder ve Redis’ten masayı siler. */
     public void onGameEnded(String tableId, User winner) {
         ReentrantLock lock = tableLocks.computeIfAbsent(tableId, k -> new ReentrantLock());
         lock.lock();
@@ -66,14 +60,10 @@ public class TableManager {
             Table table = tableRepo.findById(tableId)
                     .orElseThrow(() -> new NoSuchElementException("Table not found: " + tableId));
 
-            // 🟦 Sonucu DynamoDB’ye kaydet
             gameResultRepo.saveGameResult(table, winner);
-
-            // 🟥 Redis'ten masayı kaldır
             tableRepo.delete(tableId);
-
-            // Lock temizliği
             tableLocks.remove(tableId);
+
         } finally {
             lock.unlock();
         }
@@ -86,4 +76,5 @@ public class TableManager {
     public List<Table> listOpenTables() {
         return tableRepo.listOpenTables();
     }
+
 }

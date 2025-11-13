@@ -1,13 +1,8 @@
 package com.umutavci.awscigarettesmokersproblem.model;
 
-import com.umutavci.grpc.GameEventRequest;
-import com.umutavci.grpc.GameEventResponse;
-import io.grpc.stub.StreamObserver;
 import lombok.Data;
-import lombok.Setter;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -26,7 +21,7 @@ public class Table {
     private boolean isStarted = false;
     private boolean isBooked = false;
 
-    private final Map<String, List<StreamObserver<GameEventResponse>>> eventStreams = new ConcurrentHashMap<>();
+    private Consumer<String> eventCallback;
 
     public Table(String tableName) {
         this.tableName = tableName;
@@ -42,6 +37,8 @@ public class Table {
         User assigned = new User(user.getName(), assignedIngredient);
         smokers.add(assigned);
 
+        raise(assigned.getName() + " joined " + tableName + " with " + assigned.getOwn());
+
 
         if (smokers.size() == 3) {
             isBooked = true;
@@ -49,7 +46,7 @@ public class Table {
             executor.submit(this::startGameLoop);
         }
 
-        return assigned.getName() + "+ \" with \" + "+ assigned.getOwn() +" + joined " + tableName;
+        return assigned.getName() + "+ \" with \" + " + assigned.getOwn() + " + joined " + tableName;
     }
 
     private void startGameLoop() {
@@ -58,13 +55,14 @@ public class Table {
                 // Dealer puts two ingreadients
                 putIngredient();
                 System.out.println("Dealer puts on table: " + tableIngredients);
+                raise("Dealer puts on table: " + tableIngredients);
 
                 // Find the winner
                 User winner = findWinner();
                 if (winner != null) {
                     takeIngredient(winner);
                 } else {
-                    System.out.println("No smoker can act this round!");
+                    raise("No smoker can act this round at " + tableName);
                 }
 
                 Thread.sleep(3000);
@@ -99,6 +97,7 @@ public class Table {
 
     // The winner is smoking
     private void takeIngredient(User winner) {
+        raise("Smoking this round: " + winner.getName());
         try {
             Thread.sleep(5000);
         } catch (InterruptedException e) {
@@ -106,4 +105,11 @@ public class Table {
         }
     }
 
+
+    private void raise(String msg) {
+        if (eventCallback != null) {
+            eventCallback.accept(tableName + ":" + msg);
+        }
+
+    }
 }

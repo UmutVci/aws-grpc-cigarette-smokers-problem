@@ -32,6 +32,10 @@ public class GameGrpcService extends GameServiceGrpc.GameServiceImplBase {
         String tableId = extractTableIdFromResult(result);
         String eventMessage = request.getUsername() + " joined the game with that ingredient ";
         // Bu tableId'yi dinleyen tüm stream observer'larına mesajı gönderiyoruz.
+        playService.getTableRepo().findById(tableId).ifPresent(table -> {
+            table.setEventCallback(msg -> broadcastEvent(tableId, msg));
+        });
+
         JoinResponse response = JoinResponse.newBuilder()
                 .setMessage(result)
                 .setTableId(tableId)
@@ -45,6 +49,11 @@ public class GameGrpcService extends GameServiceGrpc.GameServiceImplBase {
     public void joinSpecificTable(JoinSpecificRequest request, StreamObserver<JoinResponse> responseObserver) {
         String result = playService.joinSpecificTable(request.getUsername(), request.getTableId());
         JoinResponse response = JoinResponse.newBuilder().setMessage(result).build();
+
+        playService.getTableRepo().findById(request.getTableId()).ifPresent(table -> {
+            table.setEventCallback(msg -> broadcastEvent(request.getTableId(), msg));
+        });
+
         responseObserver.onNext(response);
         responseObserver.onCompleted();
         broadcastEvent(request.getTableId(), request.getUsername() + " joined the game");
@@ -149,7 +158,7 @@ public class GameGrpcService extends GameServiceGrpc.GameServiceImplBase {
         System.out.println("🎧 Total subscribers for table " + tableId + ": " + eventStreams.get(tableId).size());
     }
 
-    private void broadcastEvent(String tableId, String message) {
+    void broadcastEvent(String tableId, String message) {
         GameEventResponse response = GameEventResponse.newBuilder()
                 .setTableId(tableId)
                 .setMessage(message)
@@ -179,6 +188,4 @@ public class GameGrpcService extends GameServiceGrpc.GameServiceImplBase {
         }
         return "";
     }
-
-
 }
