@@ -13,7 +13,7 @@ public class HealthController {
     }
     @GetMapping("/health")
     public String health() {
-        return "mal erkin";
+        return "mal umut";
     }
     @GetMapping("/tables/open")
     public Object openTables() {
