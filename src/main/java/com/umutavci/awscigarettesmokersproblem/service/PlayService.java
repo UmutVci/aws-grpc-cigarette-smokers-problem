@@ -17,20 +17,23 @@ public class PlayService {
     private final TableManager tableManager;
     private final TableRepository tableRepo;
 
-    /** Kullanıcı oyuna girmek istiyor → open table bul veya yeni oluştur, ekle. */
+    /** The user wants to join a game → find an open table or create a new one, then add them. */
+
     public String userWantToPlay(String username) {
         User user = new User(username);
         Table table = tableManager.findOrCreateAvailableTable();
         return tableManager.addUserToTable(user, table.getTableName());
     }
 
-    /** Kullanıcı istediği masaya geçmek istiyor. */
+    /** The user wants to move to the table they choose. */
+
     public String joinSpecificTable(String username, String tableId) {
         User user = new User(username);
         return tableManager.addUserToTable(user, tableId);
     }
 
-    /** Kullanıcı masadan ayrılıyor. */
+    /** The user is leaving the table. */
+
     public String leaveTable(String username, String tableId) {
         Table table = tableManager.getTable(tableId)
                 .orElseThrow(() -> new NoSuchElementException("Table not found: " + tableId));

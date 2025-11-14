@@ -37,7 +37,7 @@ public class Table {
         User assigned = new User(user.getName(), assignedIngredient);
         smokers.add(assigned);
 
-        raise(assigned.getName() + " joined " + tableName + " with " + assigned.getOwn());
+        raise(assigned.getName() + " joined " + " with " + assignedIngredient);
 
 
         if (smokers.size() == 3) {
@@ -54,7 +54,6 @@ public class Table {
             while (isStarted) {
                 // Dealer puts two ingreadients
                 putIngredient();
-                System.out.println("Dealer puts on table: " + tableIngredients);
                 raise("Dealer puts on table: " + tableIngredients);
 
                 // Find the winner
@@ -100,6 +99,9 @@ public class Table {
         raise("Smoking this round: " + winner.getName());
         try {
             Thread.sleep(5000);
+            raise("NEW ROUND");
+            Thread.sleep(1000);
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -108,7 +110,7 @@ public class Table {
 
     private void raise(String msg) {
         if (eventCallback != null) {
-            eventCallback.accept(tableName + ":" + msg);
+            eventCallback.accept(msg);
         }
 
     }

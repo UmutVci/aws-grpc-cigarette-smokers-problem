@@ -31,7 +31,8 @@ public class GameGrpcService extends GameServiceGrpc.GameServiceImplBase {
         String result = playService.userWantToPlay(request.getUsername());
         String tableId = extractTableIdFromResult(result);
         String eventMessage = request.getUsername() + " joined the game with that ingredient ";
-        // Bu tableId'yi dinleyen tüm stream observer'larına mesajı gönderiyoruz.
+        // We send the message to all stream observers that are listening to this tableId.
+
         playService.getTableRepo().findById(tableId).ifPresent(table -> {
             table.setEventCallback(msg -> broadcastEvent(tableId, msg));
         });
@@ -56,7 +57,6 @@ public class GameGrpcService extends GameServiceGrpc.GameServiceImplBase {
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
-        broadcastEvent(request.getTableId(), request.getUsername() + " joined the game");
     }
 
     @Override
@@ -144,18 +144,19 @@ public class GameGrpcService extends GameServiceGrpc.GameServiceImplBase {
             responseObserver.onError(e);
         }
     }
-    // streamGameEvents methodunu, game event'leri frontend'e iletmek için kullanacağız
+    // We will use the streamGameEvents method to send game events to the frontend.
+
     @Override
     public void streamGameEvents(GameEventRequest request, StreamObserver<GameEventResponse> responseObserver) {
         String tableId = request.getTableId();
 
-        // Yeni subscriber ekliyoruz
+        // Adding new subscribers
         eventStreams.computeIfAbsent(tableId, k -> {
-            System.out.println("🎧 New subscriber for table " + tableId); // Subscriber ekleniyor
-            return new ArrayList<>(); // Yeni bir ArrayList döner ve subscriber eklenir
+            System.out.println("🎧 New subscriber for table " + tableId); // adding subs
+            return new ArrayList<>();
         }).add(responseObserver);
 
-        System.out.println("🎧 Total subscribers for table " + tableId + ": " + eventStreams.get(tableId).size());
+        System.out.println("Total subscribers for table " + tableId + ": " + eventStreams.get(tableId).size());
     }
 
     void broadcastEvent(String tableId, String message) {
@@ -168,17 +169,15 @@ public class GameGrpcService extends GameServiceGrpc.GameServiceImplBase {
         if (observers != null) {
             observers.removeIf(obs -> {
                 try {
-                    System.out.println("🎮 Sending event to subscriber for table " + tableId);
                     obs.onNext(response);
                     return false;
                 } catch (Exception e) {
-                    System.err.println("❌ Observer için yayınlama hatası: " + e.getMessage());
                     obs.onError(e);
                     return true;
                 }
             });
         } else {
-            System.out.println("⚠️ No subscribers for table " + tableId);
+            System.out.println("No subscribers for table " + tableId);
         }
     }
 
