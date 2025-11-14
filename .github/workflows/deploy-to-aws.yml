@@ -5,7 +5,7 @@ name: Java (Maven) Projesini AWS Elastic Beanstalk'a Gönder
 # Sadece 'main' branch'ine push yapılınca çalışsın
 on:
   push:
-    branches: [ main ]
+    branches: [ server ]
 
 jobs:
   build-and-deploy:
