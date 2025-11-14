@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+  spring-client:
+    build: ./cigarette-smokers-problem-client
+    container_name: spring-client
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - app-network
+
+  react-frontend:
+    build: ./react-frontend
+    container_name: react-frontend
+    ports:
+      - "8082:80"
+    depends_on:
+      - spring-client
+    environment:
+      - REACT_APP_API_URL=http://spring-client:8080
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
