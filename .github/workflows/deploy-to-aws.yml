@@ -20,9 +20,13 @@ jobs:
 
       - name: Build with Maven
         run: mvn -B package -DskipTests
-        
+
       - name: Target klasörünü listele
-        run: ls -R target || echo "target klasörü yok!"
+        run: ls -R target
+
+      - name: JAR dosya adını bul
+        id: findjar
+        run: echo "JAR_FILE=$(ls target/*.jar | head -n 1)" >> $GITHUB_ENV
 
       - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v21
@@ -30,11 +34,8 @@ jobs:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           region: ${{ secrets.AWS_REGION }}
-
           application_name: ${{ secrets.EB_APPLICATION_NAME }}
           environment_name: ${{ secrets.EB_ENVIRONMENT_NAME }}
-          
           version_label: "github-${{ github.run_number }}"
-          deployment_package: "target/*.jar"
-
+          deployment_package: ${{ env.JAR_FILE }}
           wait_for_deployment: true
