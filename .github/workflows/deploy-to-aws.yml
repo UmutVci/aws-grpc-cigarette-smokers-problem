@@ -1,47 +1,41 @@
-# .github/workflows/deploy-to-aws.yml
+name: Deploy to AWS Elastic Beanstalk
 
-name: Java (Maven) Projesini AWS Elastic Beanstalk'a Gönder
-
-# Sadece 'main' branch'ine push yapılınca çalışsın
 on:
   push:
-    branches: [ main ]
+    branches: [ server ]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Adım: Kodu GitHub sunucusuna indir
-      - name: Kodu al (Checkout)
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. Adım: Java 21'i kur (Corretto 25 platformu Java 21 kullanır)
-      - name: JDK 21 kur
+      - name: Setup Java 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'corretto'
 
+      - name: Build with Maven
+        run: mvn -B package -DskipTests
 
-      - name: Maven ile Build et (package)
-        run: mvn -B package --file pom.xml -DskipTests
+      - name: Target klasörünü listele
+        run: ls -R target
 
-      - name: AWS Kimlik Bilgilerini Ayarla
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+      - name: JAR dosya adını bul
+        id: findjar
+        run: echo "JAR_FILE=$(ls target/*.jar | head -n 1)" >> $GITHUB_ENV
 
-      - name: Elastic Beanstalk'a Deploy Et
+      - name: Deploy to Elastic Beanstalk
         uses: einaregilsson/beanstalk-deploy@v21
         with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          region: ${{ secrets.AWS_REGION }}
           application_name: ${{ secrets.EB_APPLICATION_NAME }}
           environment_name: ${{ secrets.EB_ENVIRONMENT_NAME }}
-          region: ${{ secrets.AWS_REGION }}
-          version_label: "github-actions-${{ github.sha }}"
-
-          zip_file: "target/*.jar"
-
-          wait_for_environment_stability: true
+          version_label: "github-${{ github.run_number }}"
+          deployment_package: ${{ env.JAR_FILE }}
+          wait_for_deployment: true
