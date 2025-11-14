@@ -10,19 +10,17 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment: AWS_ACCESS_KEY_ID
 
     steps:
-      # 1. Adım: Kodu GitHub sunucusuna indir
       - name: Kodu al (Checkout)
         uses: actions/checkout@v4
 
-      # 2. Adım: Java 21'i kur (Corretto 25 platformu Java 21 kullanır)
       - name: JDK 21 kur
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'corretto'
-
 
       - name: Maven ile Build et (package)
         run: mvn -B package --file pom.xml -DskipTests
@@ -41,7 +39,5 @@ jobs:
           environment_name: ${{ secrets.EB_ENVIRONMENT_NAME }}
           region: ${{ secrets.AWS_REGION }}
           version_label: "github-actions-${{ github.sha }}"
-
           zip_file: "target/*.jar"
-
           wait_for_environment_stability: true
