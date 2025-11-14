@@ -11,9 +11,13 @@ public class HealthController {
     public HealthController(TableManager manager) {
         this.manager = manager;
     }
-
+    @GetMapping("/health")
+    public String health() {
+        return "OK";
+    }
     @GetMapping("/tables/open")
     public Object openTables() {
         return manager.listOpenTables().stream().map(t -> t.getTableName()).toList();
     }
 }
+
